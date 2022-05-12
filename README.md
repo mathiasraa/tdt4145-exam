@@ -5,3 +5,4 @@ TDT4145 - Data Modelling, Databases and Database Management Systems @ NTNU
 Other tools:
 - **Transactions and recovery** https://fereidani.com/tools/scheduleparser
 - **ARIES Simulator** https://mwhittaker.github.io/aries/
+- **Functional dependencies, Relational databases** http://raymondcho.net/RelationalDatabaseTools/RelationalDatabaseTools.html
