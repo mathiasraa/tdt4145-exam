@@ -37,7 +37,7 @@ class Node(object):
         self.values.pop(i)
         self.values[i:i] = value
 
-    def split(self):
+    def split(self, keys=None, key=None):
         """Splits the node into two and stores them as child nodes.
         extract a pivot from the child to be inserted into the keys of the parent.
         @:return key and two children
@@ -45,22 +45,26 @@ class Node(object):
         global splits, parent_splits
         splits += 1
         parent_splits += 1
-
         left = Node(self.parent)
 
-        # mid = len(self.keys) // 2
-        mid = len(self.keys) // 2 - 1
+        mid = len(keys) // 2
+        if key < self.keys[mid]:
+            mid = len(keys) // 2 + 1
+        elif key > self.keys[mid]:
+            mid = len(keys) // 2
+        else:
+            mid = len(keys) // 2 + 1
 
         left.keys = self.keys[:mid]
         left.values = self.values[: mid + 1]
         for child in left.values:
             child.parent = left
 
-        key = self.keys[mid]
+        key_result = self.keys[mid]
         self.keys = self.keys[mid + 1 :]
         self.values = self.values[mid + 1 :]
 
-        return key, [left, self]
+        return key_result, [left, self]
 
     def __delitem__(self, key):
         i = self.index(key)
@@ -142,21 +146,32 @@ class Leaf(Node):
         else:
             self.values[i - 1] = value
 
-    def split(self):
+    def split(self, keys=None):
         global splits
         splits += 1
 
+        key = list(set(self.keys) - set(keys))[0]
+
         left = Leaf(self.parent, self.prev, self)
-        mid = (len(self.keys)) // 2
+        mid = len(keys) // 2 + 1
 
-        left.keys = self.keys[:mid]
-        left.values = self.values[:mid]
+        left.keys = keys[:mid]
+        left.values = keys[:mid]
 
-        self.keys: list = self.keys[mid:]
-        self.values: list = self.values[mid:]
+        self.keys: list = keys[mid:]
+        self.values: list = keys[mid:]
+
+        if key > keys[mid]:
+            self.keys += [key]
+            self.values += [key]
+            self.keys.sort()
+        else:
+            left.keys += [key]
+            left.values += [key]
+            left.keys.sort()
 
         # When the leaf node is split, set the parent key to the left-most key of the right child node.
-        return self.keys[0], [left, self]
+        return keys[mid], [left, self]
 
     def __delitem__(self, key):
         i = self.keys.index(key)
@@ -249,9 +264,10 @@ class BPlusTree(object):
         """
         if leaf is None:
             leaf = self.find(key)
+        old_keys = leaf.keys.copy()
         leaf[key] = value
         if len(leaf.keys) > self.maximum:
-            self.insert_index(*leaf.split())
+            self.insert_index(*leaf.split(keys=old_keys))
 
     def insert(self, key, value):
         """
@@ -275,11 +291,12 @@ class BPlusTree(object):
             self.root.keys = [key]
             self.root.values = values
             return
+        old_parent_keys = parent.keys.copy()
 
         parent[key] = values
         # If the node is full, split the  node into two.
         if len(parent.keys) > self.maximum:
-            self.insert_index(*parent.split())
+            self.insert_index(*parent.split(keys=old_parent_keys, key=key))
         # Once a leaf node is split, it consists of a internal node and two leaf nodes.
         # These need to be re-inserted back into the tree.
 
@@ -346,9 +363,9 @@ class BPlusTree(object):
 
 def main():
     bplustree = BPlusTree(maximum=3)
-    list = [11, 13, 2, 3, 17, 18, 4, 5, 8, 7, 6]
+    list = [2, 5, 14, 22, 27, 33, 3, 7, 16, 24]
     for i in list:
-        bplustree[i] = "test" + str(i)
+        bplustree[i] = str(i)
         print("Insert " + str(i))
         bplustree.show()
 
